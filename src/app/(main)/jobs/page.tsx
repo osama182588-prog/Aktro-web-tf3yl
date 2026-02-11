@@ -9,7 +9,6 @@ import { Button } from '@/components/ui/Button'
 import { Textarea, Input } from '@/components/ui/Input'
 import { 
   Briefcase, 
-  Clock, 
   Users, 
   Shield,
   Send

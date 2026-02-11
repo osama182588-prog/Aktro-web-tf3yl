@@ -16,7 +16,6 @@ import {
   HelpCircle,
   Settings,
   Search,
-  Filter,
 } from 'lucide-react'
 
 interface AdminLog {

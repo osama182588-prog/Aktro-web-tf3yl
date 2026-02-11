@@ -10,7 +10,7 @@ import { Footer } from '@/components/layout/Footer'
 import { Button } from '@/components/ui/Button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
 import { StatusBadge, Badge } from '@/components/ui/Badge'
-import { LoadingSpinner, SkeletonLoader } from '@/components/ui/Loading'
+import { LoadingSpinner } from '@/components/ui/Loading'
 import { formatDateTime } from '@/lib/utils'
 import { 
   User, 
@@ -19,7 +19,6 @@ import {
   AlertCircle, 
   RefreshCw,
   Star,
-  ExternalLink
 } from 'lucide-react'
 import Link from 'next/link'
 

@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { motion } from 'framer-motion'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
@@ -10,16 +10,12 @@ import { LoadingSpinner } from '@/components/ui/Loading'
 import { formatDateTime } from '@/lib/utils'
 import {
   Search,
-  Filter,
-  ChevronDown,
   Eye,
   Check,
   X as XIcon,
   Edit,
-  Clock,
   Star,
   User,
-  MessageSquare,
 } from 'lucide-react'
 
 interface Application {
@@ -49,11 +45,7 @@ export default function ApplicationsPage() {
   const [adminNote, setAdminNote] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  useEffect(() => {
-    fetchApplications()
-  }, [statusFilter])
-
-  const fetchApplications = async () => {
+  const fetchApplications = useCallback(async () => {
     try {
       setIsLoading(true)
       const params = new URLSearchParams()
@@ -102,7 +94,11 @@ export default function ApplicationsPage() {
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [statusFilter, searchQuery])
+
+  useEffect(() => {
+    fetchApplications()
+  }, [fetchApplications])
 
   const handleAction = async (action: 'approve' | 'reject' | 'request_modification') => {
     if (!selectedApp) return

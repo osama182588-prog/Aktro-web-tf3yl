@@ -96,18 +96,18 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     },
     async session({ session, token }) {
       if (session.user) {
-        const roles = (token.roles as string[]) || []
+        const roles = Array.isArray(token.roles) ? token.roles : []
         const adminRole = getAdminRole(roles)
         
         // Extend the user object with our custom properties
         const extendedUser = session.user as unknown as ExtendedUser
-        extendedUser.discordId = token.discordId as string
+        extendedUser.discordId = typeof token.discordId === 'string' ? token.discordId : ''
         extendedUser.roles = roles
         extendedUser.adminRole = adminRole
         extendedUser.isPriority = hasPriorityRole(roles)
         extendedUser.isAdmin = adminRole !== null
         
-        session.accessToken = token.accessToken as string
+        session.accessToken = typeof token.accessToken === 'string' ? token.accessToken : undefined
       }
       return session
     },

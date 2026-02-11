@@ -1,4 +1,4 @@
-import { Client, GuildMember, TextChannel } from 'discord.js'
+import { Client, TextChannel } from 'discord.js'
 
 const ACTIVATED_ROLE_ID = process.env.DISCORD_ACTIVATED_ROLE_ID || ''
 
@@ -130,7 +130,7 @@ export async function checkMemberExists(client: Client, discordId: string): Prom
 
     const member = await guild.members.fetch(discordId).catch(() => null)
     return !!member
-  } catch (error) {
+  } catch {
     return false
   }
 }
@@ -147,7 +147,7 @@ export async function getMemberRoles(client: Client, discordId: string): Promise
     if (!member) return []
 
     return member.roles.cache.map(r => r.id)
-  } catch (error) {
+  } catch {
     return []
   }
 }

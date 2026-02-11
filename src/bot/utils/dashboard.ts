@@ -7,8 +7,6 @@ import {
   TextChannel,
 } from 'discord.js'
 
-const DASHBOARD_MESSAGE_ID_KEY = 'dashboard_message_id'
-
 export async function setupDashboard(client: Client, channelId: string) {
   try {
     const channel = await client.channels.fetch(channelId)
@@ -37,8 +35,6 @@ export async function setupDashboard(client: Client, channelId: string) {
         `• [التقديم على التفعيل](${process.env.NEXTAUTH_URL}/activation)\n` +
         `• [الشروط والأحكام](${process.env.NEXTAUTH_URL}/terms)\n`
       )
-      .setImage('https://i.imgur.com/placeholder.png') // Replace with actual server image
-      .setThumbnail('https://i.imgur.com/placeholder.png') // Replace with actual logo
       .setFooter({ text: 'Secret CFW | نظام التفعيل الاحترافي' })
       .setTimestamp()
 
@@ -78,13 +74,13 @@ export async function setupDashboard(client: Client, channelId: string) {
         await textChannel.send({ embeds: [embed], components: [row] })
         console.log('✅ Dashboard message created')
       }
-    } catch (error) {
+    } catch {
       // Send new message if can't find existing
       await textChannel.send({ embeds: [embed], components: [row] })
       console.log('✅ Dashboard message created')
     }
-  } catch (error) {
-    console.error('Error setting up dashboard:', error)
+  } catch (err) {
+    console.error('Error setting up dashboard:', err)
   }
 }
 

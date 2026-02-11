@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import prisma from '@/lib/prisma'
+import type { Prisma } from '@prisma/client'
 
 interface RouteParams {
   params: Promise<{ id: string }>
@@ -45,7 +46,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
         data: {
           adminId: adminUser.id,
           actionType: 'QUESTION_UPDATED',
-          details: { questionId: id, changes: JSON.parse(JSON.stringify(updateData)) },
+          details: { questionId: id, changes: updateData } as Prisma.InputJsonValue,
         },
       })
     }

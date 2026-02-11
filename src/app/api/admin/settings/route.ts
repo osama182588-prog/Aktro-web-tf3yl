@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import prisma from '@/lib/prisma'
+import type { Prisma } from '@prisma/client'
 
 // GET /api/admin/settings - Get site settings
 export async function GET() {
@@ -95,7 +96,7 @@ export async function PUT(request: NextRequest) {
         data: {
           adminId: adminUser.id,
           actionType: 'SETTINGS_UPDATED',
-          details: { changes: JSON.parse(JSON.stringify(updateData)) },
+          details: { changes: updateData } as Prisma.InputJsonValue,
         },
       })
     }

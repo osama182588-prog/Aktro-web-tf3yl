@@ -77,28 +77,32 @@ export default function AdminDashboard() {
       title: 'إجمالي الطلبات',
       value: stats?.totalApplications || 0,
       icon: FileText,
-      color: 'blue',
+      bgColor: 'bg-blue-500/20',
+      textColor: 'text-blue-400',
       trend: '+12%',
     },
     {
       title: 'طلبات منتظرة',
       value: stats?.pendingApplications || 0,
       icon: Clock,
-      color: 'yellow',
+      bgColor: 'bg-yellow-500/20',
+      textColor: 'text-yellow-400',
       trend: null,
     },
     {
       title: 'مقبول اليوم',
       value: stats?.approvedToday || 0,
       icon: CheckCircle,
-      color: 'green',
+      bgColor: 'bg-green-500/20',
+      textColor: 'text-green-400',
       trend: '+5',
     },
     {
       title: 'مرفوض اليوم',
       value: stats?.rejectedToday || 0,
       icon: XCircle,
-      color: 'red',
+      bgColor: 'bg-red-500/20',
+      textColor: 'text-red-400',
       trend: null,
     },
   ]
@@ -136,8 +140,8 @@ export default function AdminDashboard() {
                       </span>
                     )}
                   </div>
-                  <div className={`p-3 rounded-xl bg-${stat.color}-500/20`}>
-                    <stat.icon className={`w-6 h-6 text-${stat.color}-400`} />
+                  <div className={`p-3 rounded-xl ${stat.bgColor}`}>
+                    <stat.icon className={`w-6 h-6 ${stat.textColor}`} />
                   </div>
                 </div>
               </CardContent>
@@ -250,7 +254,7 @@ export default function AdminDashboard() {
                 { label: 'بنك الأسئلة', href: '/admin/questions', icon: Users },
                 { label: 'سجل النشاط', href: '/admin/logs', icon: Activity },
                 { label: 'الإعدادات', href: '/admin/settings', icon: BarChart3 },
-              ].map((action, index) => (
+              ].map((action) => (
                 <a
                   key={action.label}
                   href={action.href}

@@ -62,7 +62,7 @@ export async function registerCommands(client: Client) {
 }
 
 async function handleCommand(interaction: ChatInputCommandInteraction) {
-  const { commandName, user } = interaction
+  const { commandName } = interaction
 
   switch (commandName) {
     case 'status':

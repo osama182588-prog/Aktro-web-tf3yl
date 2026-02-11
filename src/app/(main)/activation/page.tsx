@@ -19,7 +19,7 @@ interface Question {
 }
 
 export default function ActivationPage() {
-  const { data: session, status } = useSession()
+  const { status } = useSession()
   const router = useRouter()
   const [step, setStep] = useState(1)
   const [isLoading, setIsLoading] = useState(false)

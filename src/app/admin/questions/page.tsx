@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
-import { Input, Textarea } from '@/components/ui/Input'
+import { Textarea } from '@/components/ui/Input'
 import { Badge } from '@/components/ui/Badge'
 import { LoadingSpinner } from '@/components/ui/Loading'
 import {

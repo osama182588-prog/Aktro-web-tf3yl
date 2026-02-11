@@ -25,7 +25,7 @@ export function formatDateTime(date: Date | string, locale: string = 'ar-SA'): s
 
 export function getDiscordAvatarUrl(userId: string, avatar: string | null): string {
   if (!avatar) {
-    return `https://cdn.discordapp.com/embed/avatars/${parseInt(userId) % 5}.png`
+    return `https://cdn.discordapp.com/embed/avatars/${parseInt(userId, 10) % 5}.png`
   }
   return `https://cdn.discordapp.com/avatars/${userId}/${avatar}.png`
 }
