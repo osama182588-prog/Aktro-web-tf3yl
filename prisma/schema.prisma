@@ -1,0 +1,272 @@
+// This is your Prisma schema file
+// Learn more: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================
+// User & Authentication
+// ============================================
+
+model User {
+  id                String    @id @default(cuid())
+  discordId         String    @unique
+  username          String
+  discriminator     String?
+  email             String?   @unique
+  avatar            String?
+  accessToken       String?
+  refreshToken      String?
+  roles             String[]  @default([])
+  
+  // Timestamps
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  discordCreatedAt  DateTime?
+  lastLoginAt       DateTime?
+  
+  // Relations
+  applications      Application[]
+  adminActions      AdminAction[]   @relation("AdminUser")
+  receivedActions   AdminAction[]   @relation("TargetUser")
+  notifications     Notification[]
+  jobApplications   JobApplication[]
+  
+  @@index([discordId])
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+}
+
+// ============================================
+// Activation System
+// ============================================
+
+enum ApplicationStatus {
+  PENDING      // غير مفعل
+  UNDER_REVIEW // قيد المراجعة
+  APPROVED     // مفعل
+  REJECTED     // مرفوض
+  MODIFICATION_REQUESTED // طلب تعديل
+}
+
+model Application {
+  id              String            @id @default(cuid())
+  userId          String
+  user            User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Personal Info
+  realName        String
+  age             Int
+  characterName   String
+  characterStory  String            @db.Text
+  
+  // Test Answers
+  answers         Answer[]
+  
+  // Status
+  status          ApplicationStatus @default(PENDING)
+  isPriority      Boolean           @default(false)
+  qualityRating   Int?              // 1-5 rating
+  
+  // Admin Notes
+  adminNotes      String?           @db.Text
+  internalNotes   String?           @db.Text
+  rejectionReason String?           @db.Text
+  
+  // Review Info
+  reviewedBy      String?
+  reviewedAt      DateTime?
+  
+  // Timestamps
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  
+  @@index([userId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model Answer {
+  id            String      @id @default(cuid())
+  applicationId String
+  application   Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  questionId    String
+  question      Question    @relation(fields: [questionId], references: [id])
+  answerText    String      @db.Text
+  
+  createdAt     DateTime    @default(now())
+  
+  @@index([applicationId])
+}
+
+// ============================================
+// Question Bank
+// ============================================
+
+model Question {
+  id          String   @id @default(cuid())
+  question    String   @db.Text
+  isActive    Boolean  @default(true)
+  order       Int      @default(0)
+  
+  answers     Answer[]
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  createdBy   String?
+  
+  @@index([isActive])
+}
+
+// ============================================
+// Admin Actions & Logs
+// ============================================
+
+enum ActionType {
+  APPLICATION_APPROVED
+  APPLICATION_REJECTED
+  APPLICATION_MODIFICATION_REQUESTED
+  QUESTION_CREATED
+  QUESTION_UPDATED
+  QUESTION_DELETED
+  SETTINGS_UPDATED
+  MAINTENANCE_TOGGLED
+  ROLE_SYNCED
+  BACKUP_CREATED
+}
+
+model AdminAction {
+  id          String     @id @default(cuid())
+  adminId     String
+  admin       User       @relation("AdminUser", fields: [adminId], references: [id])
+  targetId    String?
+  target      User?      @relation("TargetUser", fields: [targetId], references: [id])
+  actionType  ActionType
+  details     Json?
+  ipAddress   String?
+  userAgent   String?
+  
+  createdAt   DateTime   @default(now())
+  
+  @@index([adminId])
+  @@index([actionType])
+  @@index([createdAt])
+}
+
+// ============================================
+// Notifications
+// ============================================
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String
+  message   String   @db.Text
+  type      String   // info, success, warning, error
+  isRead    Boolean  @default(false)
+  link      String?
+  
+  createdAt DateTime @default(now())
+  
+  @@index([userId])
+  @@index([isRead])
+}
+
+// ============================================
+// Job Applications
+// ============================================
+
+enum JobApplicationStatus {
+  PENDING
+  UNDER_REVIEW
+  APPROVED
+  REJECTED
+}
+
+model JobApplication {
+  id          String               @id @default(cuid())
+  userId      String
+  user        User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  position    String
+  experience  String               @db.Text
+  motivation  String               @db.Text
+  availability String
+  status      JobApplicationStatus @default(PENDING)
+  adminNotes  String?              @db.Text
+  reviewedBy  String?
+  reviewedAt  DateTime?
+  
+  createdAt   DateTime             @default(now())
+  updatedAt   DateTime             @updatedAt
+  
+  @@index([userId])
+  @@index([status])
+}
+
+// ============================================
+// Quick Replies
+// ============================================
+
+model QuickReply {
+  id        String   @id @default(cuid())
+  title     String
+  content   String   @db.Text
+  category  String   // approval, rejection, modification
+  isActive  Boolean  @default(true)
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ============================================
+// Site Settings
+// ============================================
+
+model SiteSettings {
+  id                  String   @id @default("main")
+  siteName            String   @default("Secret CFW")
+  maintenanceMode     Boolean  @default(false)
+  maintenanceMessage  String?  @db.Text
+  questionsPerTest    Int      @default(5)
+  minAccountAgeDays   Int      @default(7)
+  reviewWaitHours     Int      @default(24)
+  
+  // Theme Settings
+  primaryColor        String   @default("#3B82F6")
+  secondaryColor      String   @default("#6B7280")
+  darkMode            Boolean  @default(true)
+  customCss           String?  @db.Text
+  logoUrl             String?
+  backgroundUrl       String?
+  
+  updatedAt           DateTime @updatedAt
+}
