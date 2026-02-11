@@ -1,0 +1,141 @@
+// Secret CFW - Prisma Schema
+// منصة إدارة تفعيل اللاعبين لسيرفر FiveM
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// نموذج المستخدم
+model User {
+  id                String    @id @default(cuid())
+  discordId         String    @unique
+  username          String
+  displayName       String?
+  email             String?
+  avatar            String?
+  roles             String[]  @default([])
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  lastLoginAt       DateTime?
+  
+  // العلاقات
+  activationRequest ActivationRequest?
+  adminLogs         AdminLog[]         @relation("AdminActions")
+  targetedLogs      AdminLog[]         @relation("TargetedActions")
+  
+  @@index([discordId])
+}
+
+// حالات التفعيل
+enum ActivationStatus {
+  NOT_ACTIVATED   // غير مفعل
+  PENDING_REVIEW  // قيد المراجعة
+  ACTIVATED       // مفعل
+  REJECTED        // مرفوض
+  MODIFICATION_REQUESTED // طلب تعديل
+}
+
+// نموذج طلب التفعيل
+model ActivationRequest {
+  id              String           @id @default(cuid())
+  userId          String           @unique
+  user            User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // معلومات المتقدم
+  realName        String
+  age             Int
+  characterName   String
+  characterStory  String           @db.Text
+  
+  // إجابات الاختبار
+  answers         Json             // {questionId: answer}
+  
+  // الحالة والمراجعة
+  status          ActivationStatus @default(PENDING_REVIEW)
+  adminNotes      String?          @db.Text
+  publicNotes     String?          @db.Text
+  reviewedBy      String?
+  reviewedAt      DateTime?
+  
+  // معلومات الأولوية
+  isPriority      Boolean          @default(false)
+  qualityRating   Int?             // تصنيف جودة الطلب 1-5
+  
+  // الوقت
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  
+  @@index([status])
+  @@index([isPriority])
+  @@index([createdAt])
+}
+
+// نموذج بنك الأسئلة
+model Question {
+  id        String   @id @default(cuid())
+  question  String   @db.Text
+  isActive  Boolean  @default(true)
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String?
+  
+  @@index([isActive])
+}
+
+// نموذج سجل الإدارة
+model AdminLog {
+  id          String   @id @default(cuid())
+  action      String   // نوع العملية
+  details     String?  @db.Text
+  adminId     String
+  admin       User     @relation("AdminActions", fields: [adminId], references: [id])
+  targetId    String?
+  target      User?    @relation("TargetedActions", fields: [targetId], references: [id])
+  createdAt   DateTime @default(now())
+  
+  @@index([adminId])
+  @@index([createdAt])
+}
+
+// نموذج إعدادات النظام
+model SystemSetting {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     String   @db.Text
+  updatedAt DateTime @updatedAt
+  updatedBy String?
+  
+  @@index([key])
+}
+
+// نموذج الردود السريعة
+model QuickResponse {
+  id        String   @id @default(cuid())
+  title     String
+  content   String   @db.Text
+  category  String   @default("general")
+  createdAt DateTime @default(now())
+  createdBy String?
+  
+  @@index([category])
+}
+
+// نموذج الإشعارات
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  title     String
+  message   String   @db.Text
+  isRead    Boolean  @default(false)
+  type      String   @default("info")
+  createdAt DateTime @default(now())
+  
+  @@index([userId])
+  @@index([isRead])
+}
