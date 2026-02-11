@@ -1,0 +1,165 @@
+// Prisma Schema for Secret CFW Platform
+// نظام منصة Secret CFW
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// User model - linked to Discord
+model User {
+  id              String   @id @default(cuid())
+  discordId       String   @unique
+  discordUsername String
+  discordAvatar   String?
+  email           String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  // Role flags based on Discord roles
+  isHighAdmin     Boolean  @default(false)
+  isActivationAdmin Boolean @default(false)
+  isGeneralAdmin  Boolean  @default(false)
+  
+  // Priority status
+  hasPriority     Boolean  @default(false)
+  
+  // Account security
+  accountCreatedAt DateTime? // Discord account creation date
+  lastLoginAt     DateTime?
+  loginCount      Int      @default(0)
+  
+  // Relations
+  activationRequests ActivationRequest[]
+  adminActions       AdminLog[]         @relation("AdminUser")
+  targetedActions    AdminLog[]         @relation("TargetUser")
+}
+
+// Activation Request
+model ActivationRequest {
+  id              String   @id @default(cuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Form data
+  realName        String
+  age             Int
+  characterName   String
+  characterStory  String   @db.Text
+  
+  // Quiz answers (JSON array of {questionId, answer})
+  quizAnswers     Json
+  
+  // Status
+  status          ActivationStatus @default(PENDING)
+  
+  // Priority flag
+  hasPriority     Boolean  @default(false)
+  
+  // Admin notes
+  adminNotes      String?  @db.Text
+  publicNotes     String?  @db.Text  // Notes visible to user
+  
+  // Quality rating (1-5)
+  qualityRating   Int?
+  
+  // Timestamps
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  reviewedAt      DateTime?
+  reviewedBy      String?
+  
+  @@index([userId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+enum ActivationStatus {
+  NOT_ACTIVATED  // غير مفعل
+  PENDING        // قيد المراجعة
+  ACTIVATED      // مفعل
+  REJECTED       // مرفوض
+  EDIT_REQUESTED // طلب تعديل
+}
+
+// Question Bank
+model Question {
+  id          String   @id @default(cuid())
+  text        String   @db.Text
+  isActive    Boolean  @default(true)
+  order       Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  createdBy   String?
+  
+  @@index([isActive])
+}
+
+// Admin Activity Log
+model AdminLog {
+  id          String   @id @default(cuid())
+  adminId     String
+  admin       User     @relation("AdminUser", fields: [adminId], references: [id], onDelete: Cascade)
+  targetId    String?
+  target      User?    @relation("TargetUser", fields: [targetId], references: [id], onDelete: SetNull)
+  
+  action      String
+  details     Json?
+  
+  createdAt   DateTime @default(now())
+  
+  @@index([adminId])
+  @@index([createdAt])
+}
+
+// System Settings
+model Setting {
+  id          String   @id @default(cuid())
+  key         String   @unique
+  value       Json
+  updatedAt   DateTime @updatedAt
+  updatedBy   String?
+}
+
+// Quick Responses for admins
+model QuickResponse {
+  id          String   @id @default(cuid())
+  title       String
+  content     String   @db.Text
+  category    String   @default("general")
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// Internal Notifications
+model Notification {
+  id          String   @id @default(cuid())
+  userId      String?
+  type        String
+  title       String
+  message     String   @db.Text
+  isRead      Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  
+  @@index([userId])
+}
+
+// Design/Theme Settings
+model ThemeSettings {
+  id              String   @id @default(cuid())
+  name            String
+  primaryColor    String   @default("#3B82F6")
+  secondaryColor  String   @default("#6B7280")
+  isDarkMode      Boolean  @default(true)
+  backgroundUrl   String?
+  customCss       String?  @db.Text
+  isActive        Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  createdBy       String?
+}
