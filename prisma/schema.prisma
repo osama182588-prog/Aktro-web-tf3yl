@@ -1,0 +1,187 @@
+// Secret CFW Platform - Database Schema
+// https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// User model - synced with Discord
+model User {
+  id                String   @id @default(cuid())
+  discordId         String   @unique
+  discordUsername   String
+  discordAvatar     String?
+  discordEmail      String?
+  discordJoinedAt   DateTime?
+  
+  // Activation status
+  activationStatus  ActivationStatus @default(NOT_ACTIVATED)
+  
+  // Role flags (synced from Discord roles)
+  isHighAdmin       Boolean  @default(false)
+  isActivationAdmin Boolean  @default(false)
+  isGeneralAdmin    Boolean  @default(false)
+  hasPriority       Boolean  @default(false)
+  
+  // Security tracking
+  lastIp            String?
+  linkedAccounts    String[] @default([])
+  
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  // Relations
+  activationRequests ActivationRequest[]
+  adminActions       AdminAction[]        @relation("AdminUser")
+  receivedActions    AdminAction[]        @relation("TargetUser")
+  notifications      Notification[]
+  
+  @@map("users")
+}
+
+// Activation request model
+model ActivationRequest {
+  id                String    @id @default(cuid())
+  userId            String
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Form data
+  realName          String
+  age               Int
+  characterName     String
+  characterStory    String    @db.Text
+  
+  // Test answers (JSON array of {questionId, answer})
+  testAnswers       Json
+  
+  // Status tracking
+  status            ActivationStatus @default(PENDING)
+  priority          Boolean   @default(false)
+  qualityRating     Int?      // 1-5 rating by admin
+  
+  // Admin feedback
+  adminNotes        String?   @db.Text
+  internalNotes     String?   @db.Text
+  rejectionReason   String?
+  modificationRequest String? @db.Text
+  
+  // Timestamps
+  submittedAt       DateTime  @default(now())
+  reviewedAt        DateTime?
+  reviewedBy        String?
+  
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  
+  @@map("activation_requests")
+}
+
+// Question bank for activation test
+model Question {
+  id          String   @id @default(cuid())
+  question    String   @db.Text
+  isActive    Boolean  @default(true)
+  order       Int      @default(0)
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  createdBy   String?
+  
+  @@map("questions")
+}
+
+// Admin actions log
+model AdminAction {
+  id          String      @id @default(cuid())
+  adminId     String
+  admin       User        @relation("AdminUser", fields: [adminId], references: [id])
+  targetId    String?
+  target      User?       @relation("TargetUser", fields: [targetId], references: [id])
+  
+  actionType  AdminActionType
+  description String      @db.Text
+  metadata    Json?
+  
+  ipAddress   String?
+  userAgent   String?
+  
+  createdAt   DateTime    @default(now())
+  
+  @@map("admin_actions")
+}
+
+// Notifications
+model Notification {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  title       String
+  message     String   @db.Text
+  type        NotificationType
+  isRead      Boolean  @default(false)
+  metadata    Json?
+  
+  createdAt   DateTime @default(now())
+  
+  @@map("notifications")
+}
+
+// Quick responses for admins
+model QuickResponse {
+  id          String   @id @default(cuid())
+  title       String
+  content     String   @db.Text
+  category    String?
+  isActive    Boolean  @default(true)
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@map("quick_responses")
+}
+
+// Site settings
+model SiteSetting {
+  id          String   @id @default(cuid())
+  key         String   @unique
+  value       Json
+  
+  updatedAt   DateTime @updatedAt
+  updatedBy   String?
+  
+  @@map("site_settings")
+}
+
+// Enums
+enum ActivationStatus {
+  NOT_ACTIVATED
+  PENDING
+  ACTIVATED
+  REJECTED
+}
+
+enum AdminActionType {
+  APPROVE_REQUEST
+  REJECT_REQUEST
+  REQUEST_MODIFICATION
+  UPDATE_SETTINGS
+  MANAGE_QUESTIONS
+  VIEW_REQUEST
+  MANUAL_STATUS_CHANGE
+  LOGIN
+  LOGOUT
+}
+
+enum NotificationType {
+  INFO
+  SUCCESS
+  WARNING
+  ERROR
+  ACTIVATION_UPDATE
+}
