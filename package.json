@@ -1,12 +1,17 @@
 {
   "name": "secret-cfw",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "private": true,
+  "description": "منصة إدارة تفعيل اللاعبين لسيرفر FiveM - Secret CFW",
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "prisma generate && next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "postinstall": "prisma generate",
+    "db:push": "prisma db push",
+    "db:migrate": "prisma migrate dev",
+    "db:seed": "npx tsx prisma/seed.ts"
   },
   "dependencies": {
     "@prisma/client": "^7.3.0",
@@ -32,6 +37,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.1.6",
     "tailwindcss": "^4",
+    "tsx": "^4.19.0",
     "typescript": "^5"
   }
 }
