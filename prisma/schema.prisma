@@ -1,0 +1,286 @@
+// Secret CFW Platform - Prisma Schema
+// Database schema for player activation system
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// =============================================
+// User & Authentication Models
+// =============================================
+
+model User {
+  id              String    @id @default(cuid())
+  discordId       String    @unique
+  username        String
+  discriminator   String?
+  avatar          String?
+  email           String?
+  roles           String[]  // Discord role IDs
+  adminRole       AdminRole @default(NONE)
+  isPriority      Boolean   @default(false)
+  isBanned        Boolean   @default(false)
+  banReason       String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  lastLogin       DateTime?
+
+  // Relations
+  applications    Application[]
+  adminReviews    Application[] @relation("ReviewedBy")
+  activityLogs    ActivityLog[]
+  notifications   Notification[]
+
+  @@index([discordId])
+  @@map("users")
+}
+
+enum AdminRole {
+  NONE           // Regular member
+  GENERAL_ADMIN  // General admin - manages questions
+  ACTIVATION_ADMIN // Activation admin - reviews applications
+  SUPER_ADMIN    // Super admin - full access
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  @@map("sessions")
+}
+
+// =============================================
+// Application & Activation Models
+// =============================================
+
+model Application {
+  id              String            @id @default(cuid())
+  userId          String
+  user            User              @relation(fields: [userId], references: [id])
+  
+  // Personal Info
+  realName        String
+  age             Int
+  characterName   String
+  characterStory  String            @db.Text
+  
+  // Answers to questions
+  answers         ApplicationAnswer[]
+  
+  // Status
+  status          ApplicationStatus @default(PENDING)
+  isPriority      Boolean           @default(false)
+  qualityRating   Int?              // 1-5 rating by admin
+  
+  // Admin Review
+  reviewedById    String?
+  reviewedBy      User?             @relation("ReviewedBy", fields: [reviewedById], references: [id])
+  reviewedAt      DateTime?
+  adminNotes      String?           @db.Text
+  rejectionReason String?           @db.Text
+  
+  // Timestamps
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  // Security
+  ipAddress       String?
+  userAgent       String?
+
+  @@index([userId])
+  @@index([status])
+  @@index([createdAt])
+  @@map("applications")
+}
+
+enum ApplicationStatus {
+  PENDING       // قيد المراجعة
+  APPROVED      // مفعل
+  REJECTED      // مرفوض
+  MODIFICATION_REQUESTED // طلب تعديل
+}
+
+model ApplicationAnswer {
+  id            String      @id @default(cuid())
+  applicationId String
+  application   Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  questionId    String
+  question      Question    @relation(fields: [questionId], references: [id])
+  answer        String      @db.Text
+  createdAt     DateTime    @default(now())
+
+  @@map("application_answers")
+}
+
+// =============================================
+// Question Bank Models
+// =============================================
+
+model Question {
+  id          String    @id @default(cuid())
+  text        String    @db.Text
+  order       Int       @default(0)
+  isActive    Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  answers     ApplicationAnswer[]
+
+  @@map("questions")
+}
+
+// =============================================
+// Admin & Activity Models
+// =============================================
+
+model ActivityLog {
+  id          String       @id @default(cuid())
+  userId      String
+  user        User         @relation(fields: [userId], references: [id])
+  action      ActivityType
+  targetType  String?      // e.g., "application", "question", "user"
+  targetId    String?
+  details     String?      @db.Text
+  ipAddress   String?
+  createdAt   DateTime     @default(now())
+
+  @@index([userId])
+  @@index([createdAt])
+  @@map("activity_logs")
+}
+
+enum ActivityType {
+  LOGIN
+  LOGOUT
+  APPLICATION_SUBMIT
+  APPLICATION_REVIEW
+  APPLICATION_APPROVE
+  APPLICATION_REJECT
+  APPLICATION_REQUEST_MODIFICATION
+  QUESTION_CREATE
+  QUESTION_UPDATE
+  QUESTION_DELETE
+  SETTINGS_UPDATE
+  USER_BAN
+  USER_UNBAN
+  BACKUP_CREATE
+  MAINTENANCE_TOGGLE
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  title     String
+  message   String   @db.Text
+  type      NotificationType
+  isRead    Boolean  @default(false)
+  link      String?
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([isRead])
+  @@map("notifications")
+}
+
+enum NotificationType {
+  APPLICATION_STATUS
+  ADMIN_ALERT
+  SYSTEM
+}
+
+// =============================================
+// System Settings Models
+// =============================================
+
+model SystemSettings {
+  id                    String   @id @default("system")
+  
+  // Activation Settings
+  questionsPerExam      Int      @default(5)
+  minAccountAge         Int      @default(7)  // Days
+  submissionCooldown    Int      @default(0)  // Hours, 0 = no cooldown after rejection
+  waitingTimeout        Int      @default(72) // Hours before request times out
+  
+  // Maintenance Mode
+  maintenanceMode       Boolean  @default(false)
+  maintenanceMessage    String?  @db.Text
+  
+  // Design Settings
+  theme                 String   @default("dark")
+  primaryColor          String   @default("#3b82f6")
+  secondaryColor        String   @default("#6b7280")
+  logoUrl               String?
+  bannerUrl             String?
+  
+  // Quick Responses
+  quickResponses        Json?    // Array of {id, title, message}
+  
+  updatedAt             DateTime @updatedAt
+
+  @@map("system_settings")
+}
+
+model DesignHistory {
+  id          String   @id @default(cuid())
+  settings    Json
+  createdBy   String
+  createdAt   DateTime @default(now())
+
+  @@map("design_history")
+}
+
+// =============================================
+// Alt Account Detection
+// =============================================
+
+model IpLog {
+  id        String   @id @default(cuid())
+  userId    String
+  ipAddress String
+  userAgent String?
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([ipAddress])
+  @@map("ip_logs")
+}
+
+// =============================================
+// Backup Model
+// =============================================
+
+model Backup {
+  id          String   @id @default(cuid())
+  filename    String
+  size        Int
+  createdBy   String
+  createdAt   DateTime @default(now())
+
+  @@map("backups")
+}
