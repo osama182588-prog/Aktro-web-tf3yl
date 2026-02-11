@@ -86,23 +86,28 @@ export default function AdminLogsPage() {
   const [page, setPage] = useState(1);
   const [totalPages] = useState(1);
 
-  const fetchLogs = useCallback(async () => {
+  const fetchLogs = useCallback(async (signal?: AbortSignal) => {
     setLoading(true);
-    // هنا يتم جلب السجلات من API
-    await new Promise(resolve => setTimeout(resolve, 500));
+    try {
+      // هنا يتم جلب السجلات من API
+      await new Promise((resolve, reject) => {
+        const timeout = setTimeout(resolve, 500);
+        signal?.addEventListener('abort', () => {
+          clearTimeout(timeout);
+          reject(new DOMException('Aborted', 'AbortError'));
+        });
+      });
+    } catch (e) {
+      if (e instanceof DOMException && e.name === 'AbortError') return;
+    }
     setLoading(false);
   }, []);
 
   // Fetch on filter change
   useEffect(() => {
-    let mounted = true;
-    const load = async () => {
-      if (mounted) {
-        await fetchLogs();
-      }
-    };
-    load();
-    return () => { mounted = false; };
+    const controller = new AbortController();
+    fetchLogs(controller.signal);
+    return () => controller.abort();
   }, [search, actionFilter, page, fetchLogs]);
 
   return (
@@ -114,7 +119,7 @@ export default function AdminLogsPage() {
           <p className="text-gray-400">جميع العمليات الإدارية المسجلة</p>
         </div>
         <button
-          onClick={fetchLogs}
+          onClick={() => fetchLogs()}
           className="btn-secondary flex items-center gap-2"
         >
           <RefreshCw className="w-4 h-4" />
