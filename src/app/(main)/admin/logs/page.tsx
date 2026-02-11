@@ -1,11 +1,10 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { 
   Activity,
   Search,
-  Filter,
   User,
   Clock,
   CheckCircle,
@@ -80,23 +79,31 @@ const actionLabels: Record<string, { label: string; icon: React.ElementType; col
 };
 
 export default function AdminLogsPage() {
-  const [logs, setLogs] = useState<LogEntry[]>(mockLogs);
+  const [logs] = useState<LogEntry[]>(mockLogs);
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState("");
   const [actionFilter, setActionFilter] = useState("all");
   const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
+  const [totalPages] = useState(1);
 
-  const fetchLogs = async () => {
+  const fetchLogs = useCallback(async () => {
     setLoading(true);
     // هنا يتم جلب السجلات من API
     await new Promise(resolve => setTimeout(resolve, 500));
     setLoading(false);
-  };
+  }, []);
 
+  // Fetch on filter change
   useEffect(() => {
-    fetchLogs();
-  }, [search, actionFilter, page]);
+    let mounted = true;
+    const load = async () => {
+      if (mounted) {
+        await fetchLogs();
+      }
+    };
+    load();
+    return () => { mounted = false; };
+  }, [search, actionFilter, page, fetchLogs]);
 
   return (
     <div className="space-y-6">

@@ -125,7 +125,7 @@ export async function PATCH(request: NextRequest) {
     }
 
     // تحديد الحالة الجديدة
-    let newStatus: string;
+    let newStatus: 'ACTIVATED' | 'REJECTED' | 'MODIFICATION_REQUESTED';
     switch (action) {
       case 'approve':
         newStatus = 'ACTIVATED';

@@ -1,10 +1,9 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { 
   Search, 
-  Filter,
   CheckCircle,
   XCircle,
   Edit,
@@ -17,7 +16,7 @@ import {
   MessageSquare,
   User
 } from "lucide-react";
-import { formatDateAr, getStatusLabel, getStatusColor } from "@/lib/utils";
+import { formatDateAr, getStatusLabel } from "@/lib/utils";
 
 interface RequestUser {
   id: string;
@@ -57,11 +56,7 @@ export default function AdminRequestsPage() {
   const [publicNotes, setPublicNotes] = useState("");
   const [adminNotes, setAdminNotes] = useState("");
 
-  useEffect(() => {
-    fetchRequests();
-  }, [search, statusFilter, priorityFilter, page]);
-
-  const fetchRequests = async () => {
+  const fetchRequests = useCallback(async () => {
     try {
       setLoading(true);
       const params = new URLSearchParams({
@@ -83,7 +78,11 @@ export default function AdminRequestsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [search, statusFilter, priorityFilter, page]);
+
+  useEffect(() => {
+    fetchRequests();
+  }, [fetchRequests]);
 
   const handleAction = async (requestId: string, action: 'approve' | 'reject' | 'request_modification') => {
     try {

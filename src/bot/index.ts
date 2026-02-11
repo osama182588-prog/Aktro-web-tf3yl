@@ -351,7 +351,7 @@ async function handleAdminButton(interaction: any) {
     }
 
     // تحديد الحالة الجديدة
-    let newStatus: string;
+    let newStatus: 'ACTIVATED' | 'REJECTED' | 'MODIFICATION_REQUESTED';
     let statusText: string;
     
     switch (action) {

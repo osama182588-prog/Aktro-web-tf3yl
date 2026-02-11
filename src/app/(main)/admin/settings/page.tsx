@@ -1,14 +1,12 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { 
-  Settings,
   Save,
   Loader2,
   ToggleLeft,
   ToggleRight,
-  Palette,
   Bell,
   Shield,
   Database,
@@ -34,7 +32,6 @@ export default function AdminSettingsPage() {
     minAccountAgeDays: 7,
     resubmitCooldownHours: 24
   });
-  const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
 

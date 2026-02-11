@@ -6,7 +6,6 @@ import {
   Plus,
   Edit,
   Trash2,
-  CheckCircle,
   XCircle,
   Save,
   HelpCircle,
