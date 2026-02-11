@@ -1,0 +1,190 @@
+// Secret CFW Platform - Prisma Schema
+// FiveM Server Activation Management System
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// User model - stores Discord authenticated users
+model User {
+  id            String    @id @default(cuid())
+  discordId     String    @unique
+  username      String
+  discriminator String?
+  avatar        String?
+  email         String?
+  roles         String[]  // Discord role IDs
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  // Relations
+  applications  Application[]
+  adminLogs     AdminLog[]      @relation("AdminActions")
+  notifications Notification[]
+  
+  @@index([discordId])
+}
+
+// Application status enum
+enum ApplicationStatus {
+  NOT_SUBMITTED  // غير مفعل
+  PENDING        // قيد المراجعة
+  APPROVED       // مفعل
+  REJECTED       // مرفوض
+  MODIFICATION   // طلب تعديل
+}
+
+// Activation application model
+model Application {
+  id              String            @id @default(cuid())
+  userId          String
+  user            User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Personal info
+  realName        String
+  age             Int
+  characterName   String
+  characterStory  String            @db.Text
+  
+  // Test answers
+  answers         Answer[]
+  
+  // Status
+  status          ApplicationStatus @default(PENDING)
+  priority        Boolean           @default(false)
+  qualityRating   Int?              // 1-5 rating
+  
+  // Admin notes
+  adminNotes      String?           @db.Text
+  publicNotes     String?           @db.Text // Notes visible to applicant
+  
+  // Metadata
+  reviewedBy      String?           // Admin Discord ID who reviewed
+  reviewedAt      DateTime?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  
+  @@index([userId])
+  @@index([status])
+  @@index([priority])
+  @@index([createdAt])
+}
+
+// Question model for the question bank
+model Question {
+  id        String    @id @default(cuid())
+  text      String    @db.Text
+  isActive  Boolean   @default(true)
+  order     Int       @default(0)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  
+  // Relations
+  answers   Answer[]
+  
+  @@index([isActive])
+}
+
+// Answer model for test responses
+model Answer {
+  id            String      @id @default(cuid())
+  applicationId String
+  application   Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  questionId    String
+  question      Question    @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  text          String      @db.Text
+  createdAt     DateTime    @default(now())
+  
+  @@unique([applicationId, questionId])
+  @@index([applicationId])
+}
+
+// Admin activity log
+model AdminLog {
+  id          String   @id @default(cuid())
+  adminId     String
+  admin       User     @relation("AdminActions", fields: [adminId], references: [id], onDelete: Cascade)
+  action      String
+  targetId    String?  // Application or User ID
+  targetType  String?  // "application", "user", "question", etc.
+  details     String?  @db.Text
+  ipAddress   String?
+  createdAt   DateTime @default(now())
+  
+  @@index([adminId])
+  @@index([createdAt])
+  @@index([action])
+}
+
+// Quick replies for admin responses
+model QuickReply {
+  id        String   @id @default(cuid())
+  title     String
+  content   String   @db.Text
+  category  String   // "approval", "rejection", "modification"
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@index([category])
+  @@index([isActive])
+}
+
+// Notification model
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String
+  message   String   @db.Text
+  type      String   // "info", "success", "warning", "error"
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+  
+  @@index([userId])
+  @@index([isRead])
+  @@index([createdAt])
+}
+
+// System settings
+model Setting {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     String   @db.Text
+  type      String   @default("string") // "string", "number", "boolean", "json"
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@index([key])
+}
+
+// Backup records
+model Backup {
+  id        String   @id @default(cuid())
+  filename  String
+  size      Int
+  type      String   // "full", "applications", "questions"
+  createdBy String
+  createdAt DateTime @default(now())
+  
+  @@index([createdAt])
+}
+
+// Alt account detection
+model AccountLink {
+  id           String   @id @default(cuid())
+  discordId1   String
+  discordId2   String
+  linkType     String   // "ip", "device", "behavior"
+  confidence   Float
+  createdAt    DateTime @default(now())
+  
+  @@unique([discordId1, discordId2])
+  @@index([discordId1])
+  @@index([discordId2])
+}
