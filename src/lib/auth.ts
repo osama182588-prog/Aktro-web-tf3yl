@@ -1,18 +1,19 @@
 import { NextAuthOptions } from "next-auth"
 import DiscordProvider from "next-auth/providers/discord"
 import { prisma } from "./prisma"
+import { config } from "./config"
 
-// Discord role IDs from environment
-const HIGH_ADMIN_ROLE = process.env.DISCORD_HIGH_ADMIN_ROLE_ID || ""
-const ACTIVATION_ADMIN_ROLE = process.env.DISCORD_ACTIVATION_ADMIN_ROLE_ID || ""
-const GENERAL_ADMIN_ROLE = process.env.DISCORD_GENERAL_ADMIN_ROLE_ID || ""
-const PRIORITY_ROLE = process.env.DISCORD_PRIORITY_ROLE_ID || ""
+// Discord role IDs from unified config
+const HIGH_ADMIN_ROLE = config.bot.roles.highAdmin
+const ACTIVATION_ADMIN_ROLE = config.bot.roles.activationAdmin
+const GENERAL_ADMIN_ROLE = config.bot.roles.generalAdmin
+const PRIORITY_ROLE = config.bot.roles.priority
 
 export const authOptions: NextAuthOptions = {
   providers: [
     DiscordProvider({
-      clientId: process.env.DISCORD_CLIENT_ID || "",
-      clientSecret: process.env.DISCORD_CLIENT_SECRET || "",
+      clientId: config.discord.clientId,
+      clientSecret: config.discord.clientSecret,
       authorization: {
         params: {
           scope: "identify email guilds guilds.members.read",
@@ -64,7 +65,7 @@ export const authOptions: NextAuthOptions = {
 
         // Fetch user roles from Discord
         try {
-          const guildId = process.env.DISCORD_GUILD_ID
+          const guildId = config.bot.guildId
           if (guildId && account.access_token) {
             const response = await fetch(
               `https://discord.com/api/users/@me/guilds/${guildId}/member`,
@@ -122,6 +123,6 @@ export const authOptions: NextAuthOptions = {
   },
   session: {
     strategy: "jwt",
-    maxAge: 7 * 24 * 60 * 60, // 7 days
+    maxAge: config.auth.sessionMaxAge,
   },
 }

@@ -3,6 +3,14 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { ActivationStatus } from "@prisma/client"
+import { eventBus, SystemEvents } from "@/lib/events"
+
+// Map admin actions to event names for bot synchronization
+const ACTION_EVENT_MAP: Record<string, keyof SystemEvents | undefined> = {
+  approve: 'activation:approved',
+  reject: 'activation:rejected',
+  request_edit: 'activation:edit_requested',
+}
 
 // GET /api/admin/requests - Get all activation requests
 export async function GET(request: NextRequest) {
@@ -182,7 +190,16 @@ export async function PUT(request: NextRequest) {
       },
     })
 
-    // TODO: Update Discord role and send notification
+    // Sync with bot via event system - updates Discord role and sends notifications
+    const eventName = ACTION_EVENT_MAP[action]
+    if (eventName) {
+      eventBus.emitEvent(eventName as 'activation:approved' | 'activation:rejected' | 'activation:edit_requested', {
+        discordId: activationRequest.user.discordId,
+        discordUsername: activationRequest.user.discordUsername,
+        reviewedBy: adminUser.discordUsername,
+        requestId,
+      })
+    }
 
     return NextResponse.json({
       success: true,

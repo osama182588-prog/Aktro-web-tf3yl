@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
+import { config } from "@/lib/config"
 
 export async function GET() {
   try {
@@ -14,8 +15,8 @@ export async function GET() {
       )
     }
 
-    // Get quiz question count from env
-    const questionCount = parseInt(process.env.QUIZ_QUESTION_COUNT || "5")
+    // Get quiz question count from unified config
+    const questionCount = config.quiz.questionCount
 
     // Get all active questions
     const allQuestions = await prisma.question.findMany({

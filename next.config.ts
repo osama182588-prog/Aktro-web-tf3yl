@@ -1,7 +1,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  // Keep discord.js and related packages as external (server-side only)
+  serverExternalPackages: ['discord.js', '@prisma/client'],
 };
 
 export default nextConfig;
