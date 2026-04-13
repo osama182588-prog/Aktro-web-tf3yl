@@ -46,6 +46,9 @@ async function getUserStatus(discordId: string) {
   }
 }
 
+// Delay before setting up the dashboard (ms) - allows Discord cache to populate
+const DASHBOARD_SETUP_DELAY_MS = 2000
+
 // Register all bot event handlers
 export function registerEventHandlers(): void {
   // Bot ready event
@@ -62,7 +65,7 @@ export function registerEventHandlers(): void {
     eventBus.emitEvent('bot:ready', { tag: readyClient.user.tag })
 
     // Setup dashboard after cache is populated
-    setTimeout(setupDashboard, 2000)
+    setTimeout(setupDashboard, DASHBOARD_SETUP_DELAY_MS)
   })
 
   // Button interaction handler

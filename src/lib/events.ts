@@ -47,13 +47,16 @@ export interface SystemEvents {
   }
 }
 
+// Maximum number of concurrent event listeners
+const MAX_EVENT_LISTENERS = 20
+
 // Create singleton event bus
 class SystemEventBus extends EventEmitter {
   private static instance: SystemEventBus
 
   private constructor() {
     super()
-    this.setMaxListeners(20)
+    this.setMaxListeners(MAX_EVENT_LISTENERS)
   }
 
   static getInstance(): SystemEventBus {
