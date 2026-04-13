@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
+import { config } from "@/lib/config"
+import { eventBus } from "@/lib/events"
 
 // GET /api/activation - Get user's activation request
 export async function GET() {
@@ -70,14 +72,14 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    if (age < 18) {
+    if (age < config.quiz.minAge) {
       return NextResponse.json(
         { success: false, error: "يجب أن يكون عمرك 18 سنة على الأقل" },
         { status: 400 }
       )
     }
 
-    if (characterStory.length < 100) {
+    if (characterStory.length < config.quiz.minStoryLength) {
       return NextResponse.json(
         { success: false, error: "قصة الشخصية قصيرة جداً" },
         { status: 400 }
@@ -122,7 +124,7 @@ export async function POST(request: NextRequest) {
     // Check rate limiting (max requests per day)
     const today = new Date()
     today.setHours(0, 0, 0, 0)
-    
+
     const todayRequests = await prisma.activationRequest.count({
       where: {
         userId: user.id,
@@ -130,8 +132,7 @@ export async function POST(request: NextRequest) {
       },
     })
 
-    const maxDaily = parseInt(process.env.MAX_DAILY_REQUESTS || "3")
-    if (todayRequests >= maxDaily) {
+    if (todayRequests >= config.rateLimit.maxDailyRequests) {
       return NextResponse.json(
         { success: false, error: "تجاوزت الحد الأقصى للطلبات اليومية" },
         { status: 429 }
@@ -152,7 +153,14 @@ export async function POST(request: NextRequest) {
       },
     })
 
-    // TODO: Send notification to Discord admin channel
+    // Notify bot via event system - syncs immediately with Discord
+    eventBus.emitEvent('activation:new_request', {
+      discordId: session.user.discordId,
+      discordUsername: user.discordUsername,
+      realName,
+      characterName,
+      requestId: activationRequest.id,
+    })
 
     return NextResponse.json({
       success: true,
